@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAO Speed Reader</title>
+    <style>
+        :root {
+            --deep-charcoal: #121212;
+            --gunmetal-grey: #2a2e35;
+            --steel-blue: #4682b4;
+            --gold: #ffd700;
+            --mid-grey: #6c757d;
+            --text-light: #e0e0e0;
+            --success: #2e7d32;
+            --danger: #c62828;
+            --neon-blue: #00f3ff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--deep-charcoal);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-y: auto;
+            padding-bottom: 50px;
+        }
+
+        .container {
+            background: var(--gunmetal-grey);
+            padding: 2.5rem;
+            border-radius: 14px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            width: 95%;
+            max-width: 700px;
+            text-align: center;
+            border: 1px solid var(--mid-grey);
+            margin-top: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--mid-grey);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--mid-grey);
+        }
+
+        .stat-value {
+            color: var(--neon-blue);
+            font-weight: 800;
+            font-size: 1.4rem;
+            font-family: monospace;
+        }
+
+        /* THE 6-DIGIT PROMPT */
+        .prompt-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .prompt-container:hover { border-color: var(--steel-blue); }
+
+        .digit-group {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            font-family: 'Courier New', monospace;
+            letter-spacing: -2px;
+        }
+        
+        .digit-label {
+            font-size: 0.8rem;
+            color: var(--mid-grey);
+            margin-top: -5px;
+            text-transform: uppercase;
+        }
+
+        /* ANSWER REVEAL */
+        .answer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .answer-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--mid-grey);
+        }
+        
+        .answer-card.p-card { border-color: #ff6b6b; } /* Red for Person */
+        .answer-card.a-card { border-color: #feca57; } /* Yellow for Action */
+        .answer-card.o-card { border-color: #48dbfb; } /* Blue for Object */
+
+        .answer-label { font-size: 0.7rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .answer-text { font-size: 1.1rem; font-weight: bold; color: white; line-height: 1.3; }
+        
+        .full-phrase {
+            grid-column: span 3;
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--gold);
+            font-style: italic;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        /* BUTTONS */
+        .btn-reveal {
+            background: var(--steel-blue);
+            color: white;
+            border: none;
+            padding: 20px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+            transition: all 0.1s;
+        }
+        .btn-reveal:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+
+        .btn-group { display: flex; gap: 15px; margin-top: 0; }
+        .btn-yes { background: var(--success); flex: 1; padding: 20px; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2rem; border:none; cursor: pointer; box-shadow: 0 5px 0 rgba(0,0,0,0.3); }
+        .btn-no { background: var(--danger); flex: 1; padding: 20px; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2rem; border:none; cursor: pointer; box-shadow: 0 5px 0 rgba(0,0,0,0.3); }
+        .btn-yes:active, .btn-no:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+
+        .hidden { display: none !important; }
+
+        /* CHART */
+        .chart-container {
+            margin-top: 40px;
+            width: 100%;
+            height: 150px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            position: relative;
+            border: 1px solid var(--mid-grey);
+        }
+        canvas { width: 100%; height: 100%; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="stat-box">Session Avg<br><span class="stat-value" id="session-avg">0.00s</span></div>
+        <div class="stat-box">Last Time<br><span class="stat-value" id="last-time">--</span></div>
+    </div>
+
+    <div id="prompt-view">
+        <div class="prompt-container" onclick="reveal()">
+            <div style="text-align:center">
+                <div class="digit-group" id="d-p">00</div>
+                <div class="digit-label">Person</div>
+            </div>
+            <div style="text-align:center">
+                <div class="digit-group" style="color:#888">-</div>
+            </div>
+            <div style="text-align:center">
+                <div class="digit-group" id="d-a">00</div>
+                <div class="digit-label">Action</div>
+            </div>
+            <div style="text-align:center">
+                <div class="digit-group" style="color:#888">-</div>
+            </div>
+            <div style="text-align:center">
+                <div class="digit-group" id="d-o">00</div>
+                <div class="digit-label">Object</div>
+            </div>
+        </div>
+        <button class="btn-reveal" id="reveal-btn" onclick="reveal()">REVEAL (Space)</button>
+    </div>
+
+    <div id="answer-view" class="hidden">
+        <div class="answer-grid">
+            <div class="answer-card p-card">
+                <span class="answer-label">PERSON (from <span id="lbl-p">00</span>)</span>
+                <div class="answer-text" id="ans-p">...</div>
+            </div>
+            <div class="answer-card a-card">
+                <span class="answer-label">ACTION (from <span id="lbl-a">00</span>)</span>
+                <div class="answer-text" id="ans-a">...</div>
+            </div>
+            <div class="answer-card o-card">
+                <span class="answer-label">OBJECT (from <span id="lbl-o">00</span>)</span>
+                <div class="answer-text" id="ans-o">...</div>
+            </div>
+            <div class="full-phrase" id="full-phrase">
+                "..."
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-no" onclick="handleVerdict(false)">FAIL (1)</button>
+            <button class="btn-yes" onclick="handleVerdict(true)">SUCCESS (2)</button>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="speedChart"></canvas>
+    </div>
+    <div class="stat-box" style="margin-top:5px;">Speed History (Lower is Better)</div>
+</div>
+
+<script>
+    // SPLIT DATA
+    // I have parsed the list into P / A / O for you.
+    const PAO_DATA = [
+        { n:"00", p:"Ozzy Osbourne", a:"screams", o:"heavy metal" },
+        { n:"01", p:"Neo (The One)", a:"matrixes", o:"the bullet" },
+        { n:"02", p:"Orlando Bloom", a:"boards", o:"the pirate ship" },
+        { n:"03", p:"Andits", a:"rues/streams", o:"1010 digits of pi" }, // Adjusted based on prompt context
+        { n:"04", p:"Odin", a:"births", o:"Thor" },
+        { n:"05", p:"Oedipus", a:"sucks", o:"mom's teet" },
+        { n:"06", p:"Octavia Spencer", a:"calculates", o:"the launch angle" },
+        { n:"07", p:"Olivier Giroud", a:"scores", o:"the penalty kick" },
+        { n:"08", p:"Ohio State", a:"loses to", o:"Michigan" },
+        { n:"09", p:"Oscar Nunez", a:"annoys", o:"Michael Scott" },
+        { n:"10", p:"AOC", a:"plays", o:"Among Us" },
+        { n:"11", p:"Ashley Alexander", a:"whisks", o:"nami matcha" },
+        { n:"12", p:"Alexander Bell", a:"invents", o:"the telephone" },
+        { n:"13", p:"Al Capone", a:"bootlegs", o:"alcohol" },
+        { n:"14", p:"Anthony Davis", a:"dunks", o:"the basketball" },
+        { n:"15", p:"Albert Einstein", a:"solves", o:"the equation" },
+        { n:"16", p:"Arnold Schwarzenegger", a:"lifts", o:"weights" },
+        { n:"17", p:"Ariana Grande", a:"makes out with", o:"Ethan Slater" },
+        { n:"18", p:"Alexander Hamilton", a:"performs", o:"my shot" },
+        { n:"19", p:"Alfred Nobel", a:"awarded", o:"peace prize" },
+        { n:"20", p:"Barack Obama", a:"legislates", o:"Obamacare" },
+        { n:"21", p:"Buzz Aldrin", a:"lands", o:"the moon" },
+        { n:"22", p:"BB8", a:"rolls", o:"in the desert" },
+        { n:"23", p:"Bryan Cranston", a:"cooks", o:"crystal meth" },
+        { n:"24", p:"Brooklyn Decker", a:"models", o:"sports illustrated swimsuit" },
+        { n:"25", p:"Billie Eilish", a:"mumbles", o:"bad guy" },
+        { n:"26", p:"Barney Stinson", a:"picks up", o:"women" },
+        { n:"27", p:"Britney Griner", a:"gets arrested", o:"in Russia" },
+        { n:"28", p:"Brett Hull", a:"skates", o:"on ice rink" },
+        { n:"29", p:"Benjamin Netanyahu", a:"commits", o:"genocide in Gaza" },
+        { n:"30", p:"Conan O'Brien", a:"hosts", o:"late night show" },
+        { n:"31", p:"Clay Aiken", a:"wins", o:"American Idol" },
+        { n:"32", p:"Chris Brown", a:"abuses", o:"Rihanna" },
+        { n:"33", p:"CC Sabathia", a:"throws", o:"a strike" },
+        { n:"34", p:"Claude Debussy", a:"composes", o:"Deux Arabesque" },
+        { n:"35", p:"CEO", a:"owns", o:"company" },
+        { n:"36", p:"Charlie Sheen", a:"pedophiles", o:"children" },
+        { n:"37", p:"Chris Gardner", a:"interviews", o:"at bank" },
+        { n:"38", p:"Chris Hemsworth", a:"wields", o:"Mjolnir" },
+        { n:"39", p:"Cam Newton", a:"throws", o:"touchdown" },
+        { n:"40", p:"Doctor", a:"treats", o:"patient" },
+        { n:"41", p:"District Attorney", a:"prosecutes", o:"criminal" },
+        { n:"42", p:"Defensive Back", a:"intercepts", o:"football" },
+        { n:"43", p:"Dick Cheney", a:"bombs", o:"Iraq" },
+        { n:"44", p:"Designated Driver", a:"drives", o:"drunk people home" },
+        { n:"45", p:"Dale Earnhardt", a:"races", o:"NASCAR" },
+        { n:"46", p:"Dr. Suess", a:"writes", o:"The Cat in the Hat" },
+        { n:"47", p:"David Goggins", a:"carries", o:"the boats" },
+        { n:"48", p:"DHL", a:"delivers", o:"package" },
+        { n:"49", p:"Daniel Negreanu", a:"bluffs", o:"his poker hand" },
+        { n:"50", p:"Elmo", a:"snorts", o:"cocaine" },
+        { n:"51", p:"EA Sports", a:"announces", o:"it's in the game" },
+        { n:"52", p:"Earthbender", a:"bends", o:"rock" },
+        { n:"53", p:"Emilia Clarke", a:"burns", o:"the Lannisters" },
+        { n:"54", p:"Ellen DeGeneres", a:"bullies", o:"employees" },
+        { n:"55", p:"Electrical Engineer", a:"fixes", o:"computers" },
+        { n:"56", p:"Edward Snowden", a:"leaks", o:"government secrets" },
+        { n:"57", p:"Egg", a:"hatches", o:"into chicken" },
+        { n:"58", p:"Evander Holyfield", a:"knocks out", o:"boxer" },
+        { n:"59", p:"Elyn Nordegren", a:"gets cheated on by", o:"Tiger Woods" },
+        { n:"60", p:"Significant Other", a:"proposes", o:"on one knee" },
+        { n:"61", p:"Stephen A. Smith", a:"yaps", o:"on Sportscenter" },
+        { n:"62", p:"Sergey Brin", a:"codes", o:"Google" },
+        { n:"63", p:"Santa Claus", a:"gifts", o:"Christmas gifts" },
+        { n:"64", p:"Snoop Dogg", a:"smokes", o:"weed" },
+        { n:"65", p:"Sean Evans", a:"eats", o:"hot wings" },
+        { n:"66", p:"Steven Spielberg", a:"directs", o:"ET" },
+        { n:"67", p:"Sasha Grey", a:"sucks", o:"dick" },
+        { n:"68", p:"Sherlock Holmes", a:"deduces", o:"mystery" },
+        { n:"69", p:"Sonic", a:"collects", o:"coins" },
+        { n:"70", p:"Goku", a:"powers up to", o:"Super Saiyan 3" },
+        { n:"71", p:"Gilbert Arenas", a:"shoots", o:"the gun" },
+        { n:"72", p:"George Bush", a:"says", o:"fool me once" },
+        { n:"73", p:"GothamChess", a:"checkmates", o:"Magnus Carlsen" },
+        { n:"74", p:"Grigor Dimitrov", a:"serves", o:"an ace" },
+        { n:"75", p:"Genie", a:"grants", o:"wish" },
+        { n:"76", p:"Gwen Stefani", a:"hollers back", o:"at girls" },
+        { n:"77", p:"Galileo Galilei", a:"discovers", o:"the stars" },
+        { n:"78", p:"Grace Hopper", a:"provides", o:"scholarships" },
+        { n:"79", p:"Gavin Newsom", a:"governs", o:"California" },
+        { n:"80", p:"Ho-Oh", a:"spams", o:"Sacred Fire" },
+        { n:"81", p:"Hans Anderson", a:"tells", o:"fairytales" },
+        { n:"82", p:"Hellboy", a:"grinds", o:"horns" },
+        { n:"83", p:"House Cat", a:"catches", o:"mice" },
+        { n:"84", p:"House Dog", a:"chews", o:"bone" },
+        { n:"85", p:"He-Man", a:"kills", o:"Skeletor" },
+        { n:"86", p:"Harry Styles", a:"sings", o:"Watermelon Sugar" },
+        { n:"87", p:"FlygonHG", a:"plays", o:"Nuzlocke" },
+        { n:"88", p:"Hulk Hogan", a:"wrestles", o:"on WWE" },
+        { n:"89", p:"Hikaru Nakamura", a:"looks up at", o:"ceiling" },
+        { n:"90", p:"Nick Offerman", a:"manages", o:"April" },
+        { n:"91", p:"Neil Armstrong", a:"leaps", o:"for mankind" },
+        { n:"92", p:"Shohei Ohtani", a:"wears", o:"New Balance" },
+        { n:"93", p:"Nicholas Cage", a:"steals", o:"Declaration of Independence" },
+        { n:"94", p:"Nick Digiovanni", a:"films", o:"YouTube Shorts" },
+        { n:"95", p:"Nemo", a:"swims", o:"forever" },
+        { n:"96", p:"Nimbus", a:"flies", o:"to the Golden Snitch" },
+        { n:"97", p:"Nice Guy", a:"finishes", o:"last" },
+        { n:"98", p:"Naruto Hokage", a:"leads", o:"Leaf Village" },
+        { n:"99", p:"Ninja", a:"falls off", o:"on Twitch" }
+    ];
+
+    let current = { p: null, a: null, o: null };
+    let startTime = 0;
+    let historyTimes = [];
+
+    function pickRandom() {
+        const r1 = Math.floor(Math.random() * PAO_DATA.length);
+        const r2 = Math.floor(Math.random() * PAO_DATA.length);
+        const r3 = Math.floor(Math.random() * PAO_DATA.length);
+
+        current.p = PAO_DATA[r1];
+        current.a = PAO_DATA[r2];
+        current.o = PAO_DATA[r3];
+
+        // RENDER PROMPT
+        document.getElementById('d-p').textContent = current.p.n;
+        document.getElementById('d-a').textContent = current.a.n;
+        document.getElementById('d-o').textContent = current.o.n;
+
+        // RENDER ANSWER
+        document.getElementById('lbl-p').textContent = current.p.n;
+        document.getElementById('ans-p').textContent = current.p.p;
+
+        document.getElementById('lbl-a').textContent = current.a.n;
+        document.getElementById('ans-a').textContent = current.a.a;
+
+        document.getElementById('lbl-o').textContent = current.o.n;
+        document.getElementById('ans-o').textContent = current.o.o;
+
+        document.getElementById('full-phrase').textContent = 
+            `"${current.p.p} ${current.a.a} ${current.o.o}"`;
+
+        // UI STATE
+        document.getElementById('prompt-view').classList.remove('hidden');
+        document.getElementById('answer-view').classList.add('hidden');
+        
+        startTime = Date.now();
+    }
+
+    function reveal() {
+        if (document.getElementById('prompt-view').classList.contains('hidden')) return;
+        
+        const elapsed = (Date.now() - startTime) / 1000;
+        document.getElementById('last-time').textContent = elapsed.toFixed(2) + 's';
+        
+        document.getElementById('prompt-view').classList.add('hidden');
+        document.getElementById('answer-view').classList.remove('hidden');
+        
+        // Temporarily store this time, but don't commit to history until they say they got it right
+        current.time = elapsed;
+    }
+
+    function handleVerdict(success) {
+        if (success) {
+            historyTimes.push(current.time);
+            if (historyTimes.length > 20) historyTimes.shift(); // Keep last 20
+            
+            updateStats();
+            drawChart();
+        }
+        pickRandom();
+    }
+
+    function updateStats() {
+        if (historyTimes.length === 0) return;
+        const sum = historyTimes.reduce((a, b) => a + b, 0);
+        const avg = sum / historyTimes.length;
+        document.getElementById('session-avg').textContent = avg.toFixed(2) + 's';
+    }
+
+    // SIMPLE CHART
+    const canvas = document.getElementById('speedChart');
+    const ctx = canvas.getContext('2d');
+    
+    function drawChart() {
+        // Resize canvas to internal display size
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+        if (historyTimes.length < 2) return;
+
+        // Find range
+        const maxTime = Math.max(...historyTimes, 5); // Minimum 5s scale
+        const minTime = 0;
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#00f3ff';
+        ctx.lineWidth = 2;
+
+        const stepX = w / (historyTimes.length - 1);
+        
+        historyTimes.forEach((time, i) => {
+            const x = i * stepX;
+            // Invert Y so lower time (better) is higher on graph? 
+            // Standard graphs: Higher Y = Higher Value. 
+            // But for speed, lower is better. Let's keep Higher Value = Higher Y, user understands.
+            // Normalize 0 to maxTime -> h to 0 (padding 10px)
+            const y = h - ((time / maxTime) * (h - 20)) - 10;
+            
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            
+            // Draw dot
+            ctx.fillStyle = '#00f3ff';
+            ctx.fillRect(x - 2, y - 2, 4, 4);
+        });
+        ctx.stroke();
+    }
+
+    // KEYBOARD
+    document.addEventListener('keydown', (e) => {
+        const promptView = document.getElementById('prompt-view');
+        const answerView = document.getElementById('answer-view');
+
+        if (!promptView.classList.contains('hidden')) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                reveal();
+            }
+        } else if (!answerView.classList.contains('hidden')) {
+            if (e.key === '1') handleVerdict(false);
+            if (e.key === '2' || e.code === 'Space') handleVerdict(true);
+        }
+    });
+
+    // Start
+    pickRandom();
+
+</script>
+</body>
+</html>

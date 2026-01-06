@@ -249,10 +249,11 @@
     </div>
 
 
-    <div id="tab-reader" class="mode-section">
-        <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="stat-box" style="text-align:left">Avg Speed<br><span class="stat-val" id="reader-avg">0.00s</span></div>
-            <button class="btn btn-small btn-toggle" id="btn-reader-mode" onclick="toggleReaderMode()">Mode: Digits → Story</button>
+   <div id="tab-reader" class="mode-section">
+        <div class="header" style="display:flex; justify-content:space-between; align-items:center; gap: 10px;">
+            <div class="stat-box" style="text-align:left">Avg<br><span class="stat-val" id="reader-avg">0.00s</span></div>
+            <div class="stat-box" style="text-align:center">Last<br><span class="stat-val" style="color: var(--neon)" id="reader-last">--</span></div>
+            <button class="btn btn-small btn-toggle" style="margin:0; font-size: 0.75rem;" id="btn-reader-mode" onclick="toggleReaderMode()">Mode: Digits → Story</button>
         </div>
 
         <div id="reader-prompt" class="prompt-card" onclick="revealReader()">
@@ -270,7 +271,7 @@
                 <div class="story-display" id="rp-story-text">...</div>
             </div>
 
-            <p style="margin: 20px 0 0 0; font-size: 0.8rem; color: var(--text-dim);">Tap / Space to Reveal</p>
+            <p style="margin: 20px 0 0 0; font-size: 0.8rem; color: var(--text-dim);">Tap Space or Click to Reveal</p>
         </div>
 
         <div id="reader-answer" class="hidden">
